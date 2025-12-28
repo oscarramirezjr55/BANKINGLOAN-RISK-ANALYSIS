@@ -1,0 +1,398 @@
+---
+title: "STA 4350 Final Project"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-12-02"
+---
+
+```{r}
+#install.packages("archive")
+#install.packages("readr")
+library(archive)
+library(readr)
+```
+
+```{r}
+ 
+ ds <- read_csv(archive_read("archieve_bank.zip", file = "Loan_default.csv"))
+head(ds)
+str(ds)
+set.seed(4350)
+
+subset_data <- sample(nrow(ds),3000)
+ds<- ds[subset_data,]
+str(ds)
+
+ds <- ds[,-1]
+```
+
+## EDA
+
+```{r}
+anyNA(ds)
+ds$Default <- as.factor(ds$Default)
+levels(ds$Default)
+
+for (i in 11:length(ds)){
+  ds[[i]] <- as.factor(ds[[i]])
+}
+
+for (i in 10:length(ds)){
+ print(table(ds[,i])) 
+}
+
+for(i in 1:11){
+  print(summary(ds[[i]]))
+}
+```
+
+# Boxplots
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+
+### aligned Boxplots
+aligned_data <- ds[,1:9]
+for (i in 1:9){
+  aligned_data[,i] <- ds[,i] - median(ds[[i]] )
+}
+boxplot(aligned_data,col="skyblue", main = "Aligned Boxplot of Featured variables")
+#########-----------
+group_vector_1 <- c(aligned_data[,2],aligned_data[,3]) # Income, Loan amount
+boxplot(group_vector_1, col="skyblue")
+
+########-----------
+group_vector_2 <- c(aligned_data[,1],aligned_data[,4],aligned_data[,5],aligned_data[,7],aligned_data[,8])
+names = c("Age", "CreditScore","MonthEmp", "Interest Rate", "Loan Term" )
+boxplot(group_vector_2, names = c("Age", "CredtScre","M.Emply", "Int.Rate", "LoanTerm" ), col="violet", main="Aligned Boxplots of Featured variables")
+
+group_vector_3 <- c(aligned_data[,6],aligned_data[,9])
+boxplot(group_vector_3,col="red", main="Aligned Boxplots of Featured variables")
+##########################
+
+
+
+
+
+
+
+for (i in 1:9){
+ boxplot(ds[[i]]~ds$Default, ylab= names(ds)[i],col=c("green","red"), , main=paste("Boxplot of", names(ds)[i],"by loan default") )
+}
+
+boxplot(ds$Age, main="Boxplot of Age of Bank customers",col="orange") # 2 majority of bank customers seem to be between the ages 30 and mid 50
+summary(ds$Age)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 18.00   30.00   44.00   43.57   57.00   69.00 
+boxplot(ds$Income, main= "Boxplot of Income") #3
+summary(ds$Income)
+#----------------
+boxplot(ds$LoanAmount, main="Boxplot of loan amount of customers", col="green") #4
+summary(ds$LoanAmount)
+
+#----------
+
+boxplot(ds$CreditScore, main= "Boxplot of Credit Score of Bank customers",col="red") # 5
+summary(ds$CreditScore)
+
+#---------------
+boxplot(ds$MonthsEmployed, main= "Boxplot of Months Employed of Bank Customers",col="purple") #6
+summary(ds$MonthsEmployed)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ # 0.00   29.00   60.00   59.31   89.00  119.00
+#------------
+boxplot(ds$NumCreditLines, main= "Boxplot of Number of Credit lines",col="pink") #7
+summary(ds$NumCreditLines)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  1.000   1.000   2.000   2.494   3.000   4.000 
+#-------
+boxplot(ds$InterestRate, main= "Boxplot of Interest rate of Bank customers", col="brown") #8
+summary(ds$InterestRate)
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ #  2.00    7.76   13.38   13.48   19.23   25.00 
+
+#-------------
+boxplot(ds$LoanTerm , main= "Boxplot of Loan Term",col="skyblue") #9
+summary(ds$LoanTerm)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  12.00   24.00   36.00   36.25   48.00   60.00 
+
+#-----------
+boxplot(ds$DTIRatio, main= "Boxplot of Debt-to-Income Ratio of Bank customers",col="violet") # 10
+summary(ds$DTIRatio)
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  #  0.1     0.3     0.5     0.5     0.7     0.9 
+```
+
+# Bar plots
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+ds$Education <- factor(ds$Education, levels = c("High School", "Bachelor's", "Master's","PhD"))
+
+ds$EmploymentType<- factor(ds$EmploymentType, levels= c("Self-employed", "Unemployed","Part-time","Full-time"))
+                     
+for (i in 10:length(ds)){
+  barplot(table(ds[,i]), ylim=c(0,max(table(ds[,i]))*1.30), col=c("yellow","orange","red","blue"), main= paste("Barplot of groups within", names(ds)[i]))
+#,border="black",frame.plot=TRUE
+  abline(h=0,col="black")
+  box(lwd = 2, col = "black")
+}
+
+table_1 <- table(ds$Education,ds$EmploymentType)
+barplot(table_1, beside=TRUE, col=c("brown","blue","red","black"), ylim=c(0,250), main= " Barplot of loan defaults by Educ. and Employment type",names= c("Self-emp","Un-emp","Part-time","Full-time"),legend.text=TRUE, args.legend =  list(x = "topright",cex=0.35))
+box(lwd = 2, cex=1,col = "black")
+
+table_2 <- table(ds$Default,ds$EmploymentType)
+prop_table1<- table_2[2,]/colSums(table_2)
+barplot(prop_table1, beside=FALSE, ylim=c(0,0.2), col=c("red"), main= " Barplot of loan defaults by Employment type ", names= c("Self-emp","Un-emp","Part-time","Full-time"),args.legend =  list(x = "topright",cex=0.35))
+box(lwd = 2, cex=1,col = "black")
+
+table_3 <- table(ds$Default,ds$Education)
+prop_table2<- table_3[2,]/colSums(table_3)
+barplot(prop_table2, beside=False, ylim=c(0,0.2), col="red", main= " Barplot of loan defaults by Education levels ", args.legend =  list(x = "topright",cex=0.35))
+box(lwd = 2, cex=1,col = "black")
+
+table_4 <- table(ds$Default,ds$LoanPurpose)
+prop_table3<- table_4[2,]/colSums(table_4)
+barplot(prop_table3, beside=False, ylim=c(0,0.2), col="red", main= " Barplot of loan defaults by Loan Purpose ", args.legend =  list(x = "topright",cex=0.35))
+box(lwd = 2, cex=1,col = "black")
+```
+
+# Logistics regression model/Statistical inference
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+logistic_1 <- glm(Default~., data=ds,family=binomial) 
+summary(logistic_1)
+# LoanTerm, DTIratio, HasMortgage, Loan Purpose, HasCosigner, Employment type( but we have 0.07)
+# AIC: 1877.1
+
+
+logistic_2 <- glm(Default~.-DTIRatio, data=ds,family=binomial) # ratio
+summary(logistic_2)
+# AIC: 1877.3
+anova(logistic_2,logistic_1, test="LRT") # 0.1399 which means that we have insufficent evidence to fail the null hypothesis, which means that the smaller or subset model is just as good as our bigger model. 
+
+# Looking at the Wald test for each of our independent vairbales within the logisitic regression model.
+logistic_3 <- glm(Default~.-LoanTerm-LoanPurpose-HasCoSigner-MaritalStatus-DTIRatio-ds$HasMortgage, data=ds, family=binomial)
+summary(logistic_3)
+# AIC: 1877.1
+#AIC: 1877.3
+#AIC: 1873.3
+
+anova(logistic_3,logistic_2,test="LRT") # 0.1511 which means that we have insufficent evidence to fail the null hypothesis, which means that the smaller or subset model (logistic_3) is just as good as our bigger model(logistic_2). Thus by statistical inference logistic_3 is the better model.
+
+
+```
+
+# ROC curve
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+roc_plot<- function(y, ph, clr="red",new_plot= TRUE, dt=0.001 ){
+  #sequence of tau values at which to evaluate and plot
+  taus <- seq(0,1,dt)
+  
+  # make vector for sensitivity and fpr values 
+  
+  sens<- numeric(length(taus))
+  fpr<- numeric(length(taus))
+  
+  # calculation sensitivity and fpr values:
+  for (i in seq_along(taus)) {
+    sens[i] <- mean(ph[y==1]> taus[i])
+    fpr[i] <- mean(ph[y==0] > taus[i])
+  }
+  if(new_plot){
+    plot(NA,NA, type="n", xlim=c(0,1), ylim=c(0,1), 
+         xlab="False Positive Rate", ylab="Sensitivity")
+    abline(h=c(0,1),v=c(0,1), a=0,b=1)
+  }
+  # draw ROC curve
+  lines(fpr,sens,col=clr,lwd=3)
+}
+#roc_plot(icu$sta, phat2, new_plot=TRUE)
+#roc_plot(icu$sta, phat3,clr=rgb(0,0,1,0.3),new_plot=FALSE)
+```
+
+# K-fold Cross validaiton for model 1
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+#ds <- ds[,-1]
+
+n_total <- nrow(ds)
+n_test <- 0.2*n_total
+n_ds<- n_total-n_test
+k<- 10
+ds_fold <- n_ds/k
+set.seed(4350)
+test_i <- sample(n_total, n_test)
+ds_test<- ds[test_i,]
+ds_cv <- ds[-test_i,]
+perm <- sample(n_ds,n_ds)
+pi_hat_1= pi_hat_2 = pi_hat_3 = numeric(n_ds)
+
+for(j in 1:k){
+  
+  fold <- perm[1:ds_fold + (j-1)*ds_fold]
+  
+  mlr_1<- glm(Default~., data=ds_cv,family=binomial,subset=-fold)
+  mlr_2 <- glm(Default~.-DTIRatio, data=ds_cv,family=binomial,subset=-fold)
+  mlr_3 <- glm(Default~.-LoanTerm-LoanPurpose-HasCoSigner-MaritalStatus-DTIRatio-HasMortgage, data=ds_cv, family=binomial,subset=-fold)
+  pi_hat_1[fold]<- predict(mlr_1, newdata=ds_cv[fold,], type="response")
+  pi_hat_2[fold]<- predict(mlr_2, newdata=ds_cv[fold,], type="response")
+  pi_hat_3[fold]<- predict(mlr_2, newdata=ds_cv[fold,], type="response")
+}
+summary(mlr_1)
+summary(mlr_2)
+summary(mlr_3)
+
+anova(mlr_1,mlr_2,test="LRT") # Smaller model just as good as bigger model 
+anova(mlr_3,mlr_2,test="LRT") # Smaller model is just as good as bigger model
+tau <- 0.5
+y_hat_1 <- as.numeric(pi_hat_1 > tau)
+y_hat_2 <- as.numeric(pi_hat_2 > tau)
+y_hat_3 <- as.numeric(pi_hat_3 > tau)
+
+# ROC of testing dataset
+roc_plot(ds_cv$Default, pi_hat_1, clr="red",new_plot=TRUE)
+roc_plot(ds_cv$Default, pi_hat_2,clr="green",new_plot=FALSE)
+roc_plot(ds_cv$Default, pi_hat_3,clr="blue",new_plot=FALSE)
+# Now we will examine test set accuracy estimates
+
+
+pi_hat_test_1 <- predict(mlr_1, newdata=ds_test, type="response")
+y_hat_test_1<- as.numeric(pi_hat_test_1>tau)
+pi_hat_test_2 <- predict(mlr_2, newdata=ds_test, type="response")
+y_hat_test_2<- as.numeric(pi_hat_test_2>tau)
+pi_hat_test_3 <- predict(mlr_3, newdata=ds_test, type="response")
+y_hat_test_3<- as.numeric(pi_hat_test_3>tau)
+
+mean(y_hat_test_1 == ds_test$Default)
+mean(y_hat_test_2 == ds_test$Default)
+mean(y_hat_test_3 == ds_test$Default)
+roc_plot(ds_test$Default, pi_hat_test_1,clr="red",new_plot=TRUE)
+roc_plot(ds_test$Default, pi_hat_test_2,clr="blue",new_plot=FALSE)
+roc_plot(ds_test$Default, pi_hat_test_3,clr="green",new_plot=FALSE)
+legend( "bottomright", legend=c("Model_1(FULL Model)", "Model_2(without DTIratio)", "Model_3(smaller model)"), col=c("red","blue","green"), lwd=2,cex=0.5)
+# Which our ROC prediction preforms worse than the training dataset since we have less data.
+
+
+```
+
+# AUC (AREA Under the Curve)
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+#Note that I did use AI assistance to calculate which of the ROC curves was better by AUC package search up 
+#install.packages("pROC")
+library(pROC)
+
+# AUC for each set of predictions
+auc_1 <- auc(ds_test$Default, pi_hat_test_1)
+auc_2 <- auc(ds_test$Default, pi_hat_test_2)
+auc_3 <- auc(ds_test$Default, pi_hat_test_3)
+
+# Print results
+auc_1
+auc_2
+auc_3
+
+```
+
+# Scenario 1
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+scenario_1 <- coef(mlr_3)["(Intercept)"] + coef(mlr_3)["Age"]*25 + coef(mlr_3)["Income"]*85000 + coef(mlr_3)["LoanAmount"]*200000 + coef(mlr_3)["CreditScore"]*750 + coef(mlr_3)["NumCreditLines"]*3 + coef(mlr_3)["MonthsEmployed"]*24 + coef(mlr_3)["InterestRate"]*10 + coef(mlr_3)["EducationBachelor's"]*0 + coef(mlr_3)["EducationMaster's"]*1 + coef(mlr_3)["EducationPhD"]*0 + coef(mlr_3)["EmploymentTypeUnemployed"] *0 + coef(mlr_3)["EmploymentTypePart-time"]*0 + coef(mlr_3)["EmploymentTypeFull-time"]*1 + coef(mlr_3)["HasDependentsYes"]*0
+ # Note 25 years, income of 85000, loan amount of 200000 , 750 credit score, 3 credit lines, 24 months employed, 10 percent interest rate on the loan, with a masters degree, full time job, and does not have any dependents.
+# 
+
+prob_scen1<- (1/(1+ exp(-(scenario_1))));prob_scen1
+# The probability in this specific case of the banking customer that recieved a loan of them defaulting is 13.24 percent.
+```
+
+# Interpretations
+
+```{r, tidy=TRUE, comment=NA, echo=TRUE}
+
+summary(mlr_3)
+CI_logodds <- confint(mlr_3)
+############------------------
+sd(ds$Age) # 15.05
+CI_age_2.5 <- CI_logodds["Age",1]
+CI_age_97.5 <- CI_logodds["Age",2]
+exp(10*CI_age_2.5)
+exp(10*CI_age_97.5)
+
+# We are 95 percent sure that when the age of the banking customer that recieved a loan increases by 10 years the odds of them defaulting on their loan is lower between 41.85 percent and 28.84 percent, assuming all other variables are fixed.
+
+######-------------------
+sd(ds$Income) 
+CI_Income_2.5 <- CI_logodds["Income",1];CI_Income_2.5
+CI_Income_97.5 <- CI_logodds["Income",2];CI_Income_97.5
+exp(10000*CI_Income_2.5)
+exp(10000*CI_Income_97.5)
+
+# We are 95 percent sure that when the Income of the banking customer that recieved a loan increases by 10,000 dollars the odds of them defaulting on their loan is lower between 11.89 percent and 5.21 percent, assuming all other variables are fixed.
+
+##------
+sd(ds$LoanAmount) 
+CI_LoanAmount_2.5 <- CI_logodds["LoanAmount",1];CI_LoanAmount_2.5
+CI_LoanAmount_97.5 <- CI_logodds["LoanAmount",2];CI_LoanAmount_97.5
+exp(50000*CI_LoanAmount_2.5)
+exp(50000*CI_LoanAmount_97.5)
+# We are 95 percent sure that when the Loan amount of the banking customer that recieved a loan increases 50,000 dollars the odds of them defaulting on their loan increases between 7.92 percent and 31.76 percent, assuming all other variables are fixed.
+
+##-Creditscore
+sd(ds$CreditScore) 
+CI_CreditScore_2.5 <- CI_logodds["CreditScore",1];CI_CreditScore_2.5
+CI_CreditScore_97.5 <- CI_logodds["CreditScore",2];CI_CreditScore_97.5
+exp(100*CI_CreditScore_2.5)
+exp(100*CI_CreditScore_97.5)
+# We are 95 percent sure that when the Credit-Score of the banking customer that recieved a loan increases 50,000 dollars the odds of them defaulting on their loan decreases between 21.28 percent and 5.87 percent, assuming all other variables are fixed.
+
+##- MonthsEmployed 
+sd(ds$MonthsEmployed) 
+CI_MonthsEmployed_2.5 <- CI_logodds["MonthsEmployed",1];CI_MonthsEmployed_2.5
+CI_MonthsEmployed_97.5 <- CI_logodds["MonthsEmployed",2];CI_MonthsEmployed_97.5
+exp(24*CI_MonthsEmployed_2.5)
+exp(24*CI_MonthsEmployed_97.5)
+## We are 95 percent sure that when the months employed of the banking customer that recieved a loan increased 2 years the odds of them defaulting on their loan decreased between 26.5 percent and 10.45 percent, assuming all other variables are fixed.
+
+##--------------------
+sd(ds$NumCreditLines) 
+CI_NumCreditLines_2.5 <- CI_logodds["NumCreditLines",1];CI_NumCreditLines_2.5
+CI_NumCreditLines_97.5 <- CI_logodds["NumCreditLines",2];CI_NumCreditLines_97.5
+exp(1*CI_NumCreditLines_2.5)
+exp(1*CI_NumCreditLines_97.5)
+## We are 95 percent sure that when the months employed of the banking customer that recieved a loan increased 2 years the odds of them defaulting on their loan decreased between 1.1 percent and increased 27.59 percent, assuming all other variables are fixed.
+
+# I should have just for looped this  sigh of regret
+##--------
+sd(ds$InterestRate) 
+CI_InterestRate_2.5 <- CI_logodds["InterestRate",1];CI_InterestRate_2.5
+CI_InterestRate_97.5 <- CI_logodds["InterestRate",2];CI_InterestRate_97.5
+exp(4*CI_InterestRate_2.5)
+exp(4*CI_InterestRate_97.5)
+## We are 95 percent sure that when the interest rate of the banking customer that recieved a loan increased by 4 percent the odds of them defaulting on their loan increased between 24.46 percent and  48.30 percent, assuming all other variables are fixed.
+
+
+###
+
+CI_Masters_2.5 <- CI_logodds["EducationMaster's",1];CI_Masters_2.5
+CI_Masters_97.5 <- CI_logodds["EducationMaster's",2];CI_Masters_97.5
+exp(CI_Masters_2.5)
+exp(CI_Masters_97.5)
+## We are 95 percent sure that when the highest education level obtained of the banking customer that recieved a loan is a Master's degree compared to  a Highschool diploma the odds of them defaulting on their loan decreased between 62.17 percent and  13.57 percent, assuming all other variables are fixed.
+
+###
+CI_full_2.5 <- CI_logodds["EmploymentTypeFull-time",1];CI_full_2.5
+CI_full_97.5 <- CI_logodds["EmploymentTypeFull-time",2];CI_full_97.5
+exp(CI_full_2.5)
+exp(CI_full_97.5)
+##We are 95 percent sure that when the job type of the banking customer that recieved a loan is a full time job compared to  a self-employed job the odds of them defaulting on their loan decreased between 53.28 percent and increased 5.56 percent, assuming all other variables are fixed.
+
+###------
+CI_depend_2.5 <- CI_logodds["HasDependentsYes",1];CI_depend_2.5
+CI_depend_97.5 <- CI_logodds["HasDependentsYes",2];CI_depend_97.5
+exp(CI_depend_2.5)
+exp(CI_depend_97.5)
+##We are 95 percent sure that the banking customer that has dependents compared to not having dependents the odds of them defaulting on their loan decreased between 50.16 percent and 12.11 percent, assuming all other variables are fixed.
+```
